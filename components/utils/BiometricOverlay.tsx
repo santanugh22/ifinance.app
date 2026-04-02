@@ -20,6 +20,7 @@ import {
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
 export function BiometricOverlay() {
+  const user = useAuthStore((state) => state.user);
   const setBiometricsEnabled = useAuthStore(
     (state) => state.setBiometricsEnabled,
   );
@@ -29,24 +30,40 @@ export function BiometricOverlay() {
     isCompatibilityChecked,
     isCompatible,
   } = useBiometrics();
-  const [isLocked, setIsLocked] = useState(isBiometricsEnabled);
+  const shouldRequireLock = isBiometricsEnabled && Boolean(user);
+  const [isLocked, setIsLocked] = useState(shouldRequireLock);
   const appState = useRef<AppStateStatus>(AppState.currentState);
+  const hasInitializedLockState = useRef(false);
+  const isAuthenticatingRef = useRef(false);
+  const hasAttemptedAutoUnlockRef = useRef(false);
 
   useEffect(() => {
-    if (!isBiometricsEnabled) {
+    if (!shouldRequireLock) {
       setIsLocked(false);
       return;
     }
 
-    setIsLocked(true);
-  }, [isBiometricsEnabled]);
+    // Lock on cold start only; avoid forcing an immediate re-lock
+    // when biometrics are enabled during an active session.
+    if (!hasInitializedLockState.current) {
+      setIsLocked(true);
+      hasInitializedLockState.current = true;
+      return;
+    }
+
+    setIsLocked(false);
+  }, [shouldRequireLock]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
-      const wasInBackground =
-        appState.current.match(/inactive|background/) && nextState === "active";
+      const wasReturningToForeground =
+        /inactive|background/.test(appState.current) && nextState === "active";
 
-      if (wasInBackground && isBiometricsEnabled) {
+      if (
+        wasReturningToForeground &&
+        shouldRequireLock &&
+        !isAuthenticatingRef.current
+      ) {
         setIsLocked(true);
       }
 
@@ -54,17 +71,24 @@ export function BiometricOverlay() {
     });
 
     return () => subscription.remove();
-  }, [isBiometricsEnabled]);
+  }, [shouldRequireLock]);
 
   useEffect(() => {
-    if (!isLocked || !isBiometricsEnabled) return;
+    if (!isLocked || !shouldRequireLock) {
+      hasAttemptedAutoUnlockRef.current = false;
+      return;
+    }
     if (!isCompatibilityChecked || !isCompatible) return;
+    if (hasAttemptedAutoUnlockRef.current || isAuthenticatingRef.current) {
+      return;
+    }
 
+    hasAttemptedAutoUnlockRef.current = true;
     void handleAuth();
-  }, [isLocked, isBiometricsEnabled, isCompatibilityChecked, isCompatible]);
+  }, [isLocked, shouldRequireLock, isCompatibilityChecked, isCompatible]);
 
   useEffect(() => {
-    if (!isBiometricsEnabled) return;
+    if (!shouldRequireLock) return;
     if (!isCompatibilityChecked || isCompatible) return;
 
     setBiometricsEnabled(false);
@@ -74,16 +98,23 @@ export function BiometricOverlay() {
       "Biometric app lock was turned off because no enrolled biometrics are available on this device.",
     );
   }, [
-    isBiometricsEnabled,
+    shouldRequireLock,
     isCompatibilityChecked,
     isCompatible,
     setBiometricsEnabled,
   ]);
 
   const handleAuth = async () => {
-    const success = await authenticate();
-    if (success) {
-      setIsLocked(false);
+    if (isAuthenticatingRef.current) return;
+
+    isAuthenticatingRef.current = true;
+    try {
+      const success = await authenticate();
+      if (success) {
+        setIsLocked(false);
+      }
+    } finally {
+      isAuthenticatingRef.current = false;
     }
   };
 

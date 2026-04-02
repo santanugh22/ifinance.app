@@ -1,23 +1,26 @@
 // app/_layout.tsx
-
 import { BiometricOverlay } from "@/components/utils/BiometricOverlay";
 import { ErrorBoundary } from "@/components/utils/ErrorBoundary";
-import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useFinanceStore } from "@/store/useFinanceStore";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import {
+  FirebaseAuthTypes,
+  getAuth,
+  onAuthStateChanged,
+} from "@react-native-firebase/auth";
 import {
   Stack,
+  useRootNavigationState,
   useRouter,
   useSegments,
-  useRootNavigationState,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useSettingsStore } from "@/store/useSettingsStore";
-import { useThemeColor } from "@/hooks/useThemeColor";
 
 // ─── Separate loading overlay so it never re-renders the Stack ──────────────
 // This is a key architectural fix: the Stack and its screens must live in a
@@ -72,7 +75,9 @@ export default function RootLayout() {
 
   // ── Firebase Auth listener ─────────────────────────────────────────────────
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(
+      auth,
       (firebaseUser: FirebaseAuthTypes.User | null) => {
         if (firebaseUser) {
           setUser({
@@ -88,7 +93,7 @@ export default function RootLayout() {
       },
     );
     return unsubscribe;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Route guarding ────────────────────────────────────────────────────────
   // We wait for auth AND both stores to be ready before redirecting.

@@ -22,6 +22,7 @@
     },
     "android": {
       "package": "com.ifinanceapp.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
@@ -37,6 +38,8 @@
       ]
     },
     "plugins": [
+      "@react-native-firebase/app/app.plugin.js",
+      "@react-native-firebase/auth/app.plugin.js",
       "expo-router",
       "expo-local-authentication",
       "expo-font",

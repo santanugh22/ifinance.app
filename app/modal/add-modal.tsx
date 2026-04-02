@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import uuid from 'react-native-uuid';
+import * as Crypto  from "expo-crypto"
 import { useFinanceStore } from '@/store/useFinanceStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Goal } from '@/types';
@@ -33,7 +33,7 @@ export default function AddGoalModal() {
     }
 
     const newGoal: Goal = {
-      id: uuid.v4() as string,
+      id: Crypto.randomUUID(),
       userId: user?.uid || 'anonymous',
       title: title.trim(),
       targetAmount: parsedAmount,

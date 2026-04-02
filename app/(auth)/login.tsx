@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Typography } from "@/constants/Typography";
-import { useBiometrics } from "@/hooks/useBiometrics";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useAuthStore } from "@/store/useAuthStore";
 import auth from "@react-native-firebase/auth";
 import React, { useState } from "react";
 import {
@@ -22,9 +20,6 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
-  const { authenticateForAction, biometricTypeLabel, isCompatible } =
-    useBiometrics();
-  const { isBiometricsEnabled, setBiometricsEnabled } = useAuthStore();
   const colors = useThemeColor();
 
   const handleAuth = async () => {
@@ -54,30 +49,6 @@ export default function LoginScreen() {
       Alert.alert(isSignUp ? "Registration Failed" : "Login Failed", message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleBiometricLogin = async () => {
-    const success = await authenticateForAction(
-      "Verify your identity to sign in",
-    );
-    if (success) {
-      setLoading(true);
-      try {
-        await auth().signInAnonymously();
-        if (!isBiometricsEnabled) {
-          setBiometricsEnabled(true);
-        }
-      } catch (e) {
-        Alert.alert("Error", "Biometric login failed to establish a session.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      Alert.alert(
-        "Authentication Required",
-        `Verify with ${biometricTypeLabel} to continue.`,
-      );
     }
   };
 
@@ -164,31 +135,6 @@ export default function LoginScreen() {
             </Text>
           </Text>
         </TouchableOpacity>
-
-        {isCompatible && !isSignUp && (
-          <View style={styles.dividerContainer}>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-            <Text
-              style={[styles.dividerText, { color: colors.tabIconDefault }]}
-            >
-              OR
-            </Text>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-          </View>
-        )}
-
-        {isCompatible && !isSignUp && (
-          <Button
-            title={`Sign in with ${biometricTypeLabel}`}
-            variant="ghost"
-            onPress={handleBiometricLogin}
-            disabled={loading}
-          />
-        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -259,20 +205,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
   },
   toggleAction: {
-    fontWeight: "700",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-    gap: 16,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: Typography.sizes.xs,
     fontWeight: "700",
   },
 });

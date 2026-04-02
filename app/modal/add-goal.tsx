@@ -9,7 +9,7 @@ import { useFinanceStore } from '@/store/useFinanceStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Goal } from '@/types';
 import { Colors } from '@/constants/Colors';
-import uuid from 'react-native-uuid';
+import * as Crypto   from "expo-crypto"
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -29,8 +29,8 @@ export default function AddGoalModal() {
     reminderHour: number;
     reminderMinute: number;
   }) => {
-    const goalId = uuid.v4() as string;
-    const newGoal: Goal = {
+    const goalId = Crypto.randomUUID();
+    const newGoal: Goal = {     
       id: goalId,
       userId: user?.uid || 'anonymous',
       title: data.title,

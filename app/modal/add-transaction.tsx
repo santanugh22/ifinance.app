@@ -9,7 +9,7 @@ import { useFinanceStore } from '@/store/useFinanceStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Transaction, TransactionType } from '@/types';
 import { Colors } from '@/constants/Colors';
-import uuid from 'react-native-uuid'; 
+import * as Crypto  from "expo-crypto"
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -24,7 +24,7 @@ export default function AddTransactionModal() {
 
   const handleSave = (data: { amount: number; type: TransactionType; categoryId: string; notes: string }) => {
     const newTransaction: Transaction = {
-      id: uuid.v4() as string,
+      id: Crypto.randomUUID(),
       userId: user?.uid || 'anonymous',
       amount: data.amount,
       type: data.type,
