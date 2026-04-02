@@ -49,7 +49,9 @@
             "buildReactNativeFromSource": true
           }
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
