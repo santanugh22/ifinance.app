@@ -8,6 +8,9 @@ import { Typography } from '@/constants/Typography';
 import { CategoryPicker } from '../ui/CategoryPicker';
 import { Button } from '../ui/Button';
 
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 interface TransactionFormProps {
   initialType?: TransactionType;
   onSubmit: (data: { amount: number; type: TransactionType; categoryId: string; notes: string }) => void;
@@ -18,6 +21,9 @@ export function TransactionForm({ initialType = 'expense', onSubmit }: Transacti
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  
+  const { selectedCurrency } = useSettingsStore();
+  const colors = useThemeColor();
 
   const handleSubmit = () => {
     const parsedAmount = parseFloat(amount.replace(',', '.'));
@@ -42,32 +48,33 @@ export function TransactionForm({ initialType = 'expense', onSubmit }: Transacti
   return (
     <View style={styles.container}>
       {/* Type Toggle */}
-      <View style={styles.toggleContainer}>
+      <View style={[styles.toggleContainer, { backgroundColor: colors.border }]}>
         <TouchableOpacity 
-          style={[styles.toggleButton, type === 'expense' && styles.toggleActiveExpense]}
+          style={[styles.toggleButton, type === 'expense' && { backgroundColor: colors.danger }]}
           onPress={() => { setType('expense'); setCategoryId(null); }}
         >
-          <Text style={[styles.toggleText, type === 'expense' && styles.toggleTextActive]}>Expense</Text>
+          <Text style={[styles.toggleText, { color: colors.tabIconDefault }, type === 'expense' && styles.toggleTextActive]}>Expense</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.toggleButton, type === 'income' && styles.toggleActiveIncome]}
+          style={[styles.toggleButton, type === 'income' && { backgroundColor: colors.success }]}
           onPress={() => { setType('income'); setCategoryId(null); }}
         >
-          <Text style={[styles.toggleText, type === 'income' && styles.toggleTextActive]}>Income</Text>
+          <Text style={[styles.toggleText, { color: colors.tabIconDefault }, type === 'income' && styles.toggleTextActive]}>Income</Text>
         </TouchableOpacity>
       </View>
 
       {/* Amount Input */}
       <View style={styles.amountContainer}>
-        <Text style={styles.currencySymbol}>$</Text>
+        <Text style={[styles.currencySymbol, { color: colors.text }]}>{selectedCurrency.symbol}</Text>
         <TextInput
-          style={styles.amountInput}
+          style={[styles.amountInput, { color: colors.text }]}
           placeholder="0.00"
-          placeholderTextColor={Colors.light.tabIconDefault}
+          placeholderTextColor={colors.tabIconDefault}
           keyboardType="decimal-pad"
           value={amount}
           onChangeText={setAmount}
           maxLength={10}
+          autoFocus
         />
       </View>
 
@@ -75,11 +82,11 @@ export function TransactionForm({ initialType = 'expense', onSubmit }: Transacti
 
       {/* Notes Input */}
       <View style={styles.notesContainer}>
-        <Text style={styles.label}>Notes (Optional)</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Notes (Optional)</Text>
         <TextInput
-          style={styles.notesInput}
+          style={[styles.notesInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
           placeholder="What was this for?"
-          placeholderTextColor={Colors.light.tabIconDefault}
+          placeholderTextColor={colors.tabIconDefault}
           value={notes}
           onChangeText={setNotes}
           maxLength={100}
@@ -97,7 +104,6 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.light.border,
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
@@ -108,16 +114,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  toggleActiveExpense: {
-    backgroundColor: Colors.light.danger,
-  },
-  toggleActiveIncome: {
-    backgroundColor: Colors.light.success,
-  },
   toggleText: {
     fontSize: Typography.sizes.sm,
     fontWeight: '600',
-    color: Colors.light.tabIconDefault,
   },
   toggleTextActive: {
     color: '#FFF',
@@ -131,19 +130,16 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: Typography.sizes['4xl'],
     fontWeight: 'bold',
-    color: Colors.light.text,
     marginRight: 8,
   },
   amountInput: {
     fontSize: Typography.sizes['4xl'],
     fontWeight: 'bold',
-    color: Colors.light.text,
     minWidth: 100,
   },
   label: {
     fontSize: Typography.sizes.sm,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 8,
   },
   notesContainer: {
@@ -151,13 +147,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   notesInput: {
-    backgroundColor: Colors.light.surface,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     borderRadius: 12,
     padding: 16,
     fontSize: Typography.sizes.base,
-    color: Colors.light.text,
   },
   submitButton: {
     marginTop: 'auto',

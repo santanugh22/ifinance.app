@@ -8,91 +8,91 @@ import { getCategoryById } from '@/constants/Categories';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 interface CategoryPieProps {
   transactions: Transaction[];
 }
 
 export function CategoryPie({ transactions }: CategoryPieProps) {
+  const { formatAmount } = useSettingsStore();
+  const colors = useThemeColor();
+
   const { pieData, totalExpense } = useMemo(() => {
     // 1. Filter only expenses
     const expenses = transactions.filter((tx) => tx.type === 'expense');
 
     // 2. Group by category and sum amounts
-    const categoryTotals: Record<string, number> = {};
+    const categoryTotals: Record<string, { amount: number, name: string, color: string }> = {};
     let total = 0;
 
     expenses.forEach((tx) => {
-      categoryTotals[tx.categoryId] = (categoryTotals[tx.categoryId] || 0) + tx.amount;
+      const category = getCategoryById(tx.categoryId);
+      if (!categoryTotals[tx.categoryId]) {
+        categoryTotals[tx.categoryId] = { 
+          amount: 0, 
+          name: category?.name || 'Other', 
+          color: category?.color || colors.tabIconDefault 
+        };
+      }
+      categoryTotals[tx.categoryId].amount += tx.amount;
       total += tx.amount;
     });
 
     // 3. Map to Gifted Charts format
-    const data = Object.keys(categoryTotals)
-      .map((categoryId) => {
-        const category = getCategoryById(categoryId);
-        return {
-          value: categoryTotals[categoryId],
-          color: category?.color || Colors.light.tabIconDefault,
-          text: category?.name.substring(0, 3), // Short label for the pie slice
-        };
-      })
+    const data = Object.entries(categoryTotals)
+      .map(([id, cat]) => ({
+        value: cat.amount,
+        color: cat.color,
+        text: cat.name.substring(0, 3),
+        label: cat.name,
+      }))
       .sort((a, b) => b.value - a.value); // Sort largest to smallest
 
     return { pieData: data, totalExpense: total };
-  }, [transactions]);
+  }, [transactions, colors.tabIconDefault]);
 
   if (pieData.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No expense data to display.</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>No expense data to display.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Spending by Category</Text>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Spending by Category</Text>
       <View style={styles.chartWrapper}>
         <PieChart
           donut
           radius={110}
           innerRadius={75}
           data={pieData}
-          centerLabelComponent={() => {
-            return (
-              <View style={styles.centerLabel}>
-                <Text style={styles.centerText}>Total</Text>
-                <Text style={styles.centerAmount}>
-                  ${totalExpense.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </Text>
-              </View>
-            );
-          }}
+          innerCircleColor={colors.surface}
+          backgroundColor={colors.surface}
+          centerLabelComponent={() => (
+            <View style={styles.centerLabel}>
+              <Text style={[styles.centerText, { color: colors.textSecondary }]}>Total</Text>
+              <Text style={[styles.centerAmount, { color: colors.text }]}>
+                {formatAmount(totalExpense)}
+              </Text>
+            </View>
+          )}
         />
       </View>
       
       {/* Legend */}
       <View style={styles.legendContainer}>
-        {pieData.map((item, index) => {
-          const category = getCategoryById(Object.keys(
-            transactions.filter(t => t.type === 'expense').reduce((acc: any, t) => {
-              acc[t.categoryId] = (acc[t.categoryId] || 0) + t.amount;
-              return acc;
-            }, {})
-          ).find(key => 
-            transactions.filter(t => t.type === 'expense' && t.categoryId === key)
-            .reduce((sum, t) => sum + t.amount, 0) === item.value
-          ) || '');
-
-          return (
-            <View key={index} style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-              <Text style={styles.legendText} numberOfLines={1}>
-                {category?.name || 'Other'} ({((item.value / totalExpense) * 100).toFixed(0)}%)
-              </Text>
-            </View>
-          );
-        })}
+        {pieData.map((item, index) => (
+          <View key={index} style={styles.legendItem}>
+            <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+            <Text style={[styles.legendText, { color: colors.text }]} numberOfLines={1}>
+              {item.label} ({((item.value / totalExpense) * 100).toFixed(0)}%)
+            </Text>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -100,7 +100,6 @@ export function CategoryPie({ transactions }: CategoryPieProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.sizes.lg,
     fontWeight: 'bold',
-    color: Colors.light.text,
     marginBottom: 24,
   },
   chartWrapper: {
@@ -126,13 +124,11 @@ const styles = StyleSheet.create({
   },
   centerText: {
     fontSize: Typography.sizes.xs,
-    color: Colors.light.tabIconDefault,
     marginBottom: 4,
   },
   centerAmount: {
     fontSize: Typography.sizes.xl,
     fontWeight: 'bold',
-    color: Colors.light.text,
   },
   legendContainer: {
     flexDirection: 'row',
@@ -153,18 +149,15 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: Typography.sizes.xs,
-    color: Colors.light.text,
     flex: 1,
   },
   emptyContainer: {
     padding: 24,
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 24,
     marginBottom: 24,
   },
   emptyText: {
-    color: Colors.light.tabIconDefault,
     fontStyle: 'italic',
   }
 });

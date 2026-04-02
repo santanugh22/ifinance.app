@@ -6,24 +6,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 function TabBarIcon({ name, color, focused }: { name: React.ComponentProps<typeof Ionicons>['name']; color: string; focused: boolean }) {
+  const colors = useThemeColor();
   return (
-    <View style={[styles.iconContainer, focused && styles.iconFocused]}>
+    <View style={[styles.iconContainer, focused && { backgroundColor: `${colors.primary}15` }]}>
       <Ionicons name={name} size={24} color={color} style={{ marginBottom: -3 }} />
     </View>
   );
 }
 
 export default function TabLayout() {
+  const colors = useThemeColor();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.primary,
-        tabBarInactiveTintColor: Colors.light.tabIconDefault,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.light.surface,
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: Colors.light.border,
+          borderTopColor: colors.border,
           elevation: 0,
           shadowOpacity: 0,
           height: Platform.OS === 'ios' ? 88 : 68,
@@ -36,15 +41,15 @@ export default function TabLayout() {
           marginTop: 4,
         },
         headerStyle: {
-          backgroundColor: Colors.light.background,
+          backgroundColor: colors.background,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: Colors.light.border,
+          borderBottomColor: colors.border,
         },
         headerTitleStyle: {
           fontWeight: '600',
-          color: Colors.light.text,
+          color: colors.text,
         },
         headerShadowVisible: false,
       }}>
@@ -74,6 +79,13 @@ export default function TabLayout() {
         options={{
           title: 'Goals',
           tabBarIcon: ({ color, focused }) => <TabBarIcon name={focused ? 'flag' : 'flag-outline'} color={color} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} />,
         }}
       />
     </Tabs>

@@ -39,4 +39,69 @@ export interface Goal {
   deadline: number; // Unix timestamp
   createdAt: number;
   isCompleted: boolean;
+  reminderEnabled?: boolean;
+  reminderHour?: number;
+  reminderMinute?: number;
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  type: 'no-spend' | 'savings-streak' | 'budget-limit';
+  targetDays: number;
+  currentDays: number;
+  icon: string;
+  isCompleted: boolean;
+  isActive: boolean;
+  startDate?: number;
+}
+
+export type CurrencyCode = 'USD' | 'INR';
+
+export interface Currency {
+  code: CurrencyCode;
+  symbol: string;
+  name: string;
+}
+
+export interface InvestmentAsset {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: string;
+  exchange: 'NSE' | 'BSE' | 'NASDAQ' | 'NYSE' | 'OTHER';
+  lastUpdated: number;
+}
+
+export interface MarketHighlight {
+  name: string;
+  symbol: string;
+  price: string;
+  change: string;
+  isUp: boolean;
+}
+
+// AI Related Types
+export interface AIInsight {
+  type: 'savings' | 'investment' | 'spending' | 'habit';
+  title: string;
+  description: string;
+  action: string;
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface InvestmentPlan {
+  riskProfile: string;
+  allocation: { asset: string; percentage: number }[];
+  strategy: string;
+  recommendations: string[];
+}
+
+export interface AIResponse {
+  summary: string;
+  insights: AIInsight[];
+  investmentPlan?: InvestmentPlan;
+  challenges?: Challenge[];
 }

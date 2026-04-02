@@ -11,6 +11,8 @@ import { Transaction, TransactionType } from '@/types';
 import { Colors } from '@/constants/Colors';
 import uuid from 'react-native-uuid'; 
 
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 export default function AddTransactionModal() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -18,6 +20,7 @@ export default function AddTransactionModal() {
   
   const addTransaction = useFinanceStore((state) => state.addTransaction);
   const user = useAuthStore((state) => state.user);
+  const colors = useThemeColor();
 
   const handleSave = (data: { amount: number; type: TransactionType; categoryId: string; notes: string }) => {
     const newTransaction: Transaction = {
@@ -38,14 +41,14 @@ export default function AddTransactionModal() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
         {/* We use an empty view to balance the flex layout for centering the close button */}
         <View style={{ width: 40 }} /> 
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={Colors.light.text} />
+        <TouchableOpacity onPress={() => router.back()} style={[styles.closeButton, { backgroundColor: colors.surface }]}>
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       
@@ -59,7 +62,6 @@ export default function AddTransactionModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     flexDirection: 'row',
@@ -72,7 +74,6 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 40,
     height: 40,
-    backgroundColor: Colors.light.surface,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',

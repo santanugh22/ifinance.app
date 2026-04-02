@@ -3,7 +3,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Transaction } from '@/types';
-import { CURRENCIES } from '@/store/useCurrencyStore';
+import { CURRENCIES } from '@/store/useSettingsStore';
 
 export class ExportService {
   /**

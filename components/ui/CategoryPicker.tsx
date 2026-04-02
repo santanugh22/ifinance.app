@@ -8,6 +8,8 @@ import { TransactionType } from '@/types';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 interface CategoryPickerProps {
   type: TransactionType;
   selectedId: string | null;
@@ -16,10 +18,11 @@ interface CategoryPickerProps {
 
 export function CategoryPicker({ type, selectedId, onSelect }: CategoryPickerProps) {
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const colors = useThemeColor();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Category</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Category</Text>
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -39,7 +42,7 @@ export function CategoryPicker({ type, selectedId, onSelect }: CategoryPickerPro
             >
               <View style={[
                 styles.iconContainer, 
-                { backgroundColor: isSelected ? category.color : Colors.light.surface }
+                { backgroundColor: isSelected ? category.color : colors.surface }
               ]}>
                 <Ionicons 
                   name={category.icon as any} 
@@ -47,7 +50,11 @@ export function CategoryPicker({ type, selectedId, onSelect }: CategoryPickerPro
                   color={isSelected ? '#FFF' : category.color} 
                 />
               </View>
-              <Text style={[styles.categoryName, isSelected && { color: category.color, fontWeight: '600' }]}>
+              <Text style={[
+                styles.categoryName, 
+                { color: colors.tabIconDefault },
+                isSelected && { color: category.color, fontWeight: '600' }
+              ]}>
                 {category.name}
               </Text>
             </TouchableOpacity>
@@ -65,12 +72,11 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.sizes.sm,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 12,
   },
   scrollContent: {
     gap: 12,
-    paddingRight: 24, // padding for the end of the scroll
+    paddingRight: 24, 
   },
   categoryItem: {
     alignItems: 'center',
@@ -95,7 +101,6 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: Typography.sizes.xs,
-    color: Colors.light.tabIconDefault,
     textAlign: 'center',
   }
 });

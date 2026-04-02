@@ -5,6 +5,8 @@ import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, TouchableOpacity
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -19,22 +21,23 @@ export function Button({
   disabled, 
   ...props 
 }: ButtonProps) {
+  const colors = useThemeColor();
   
   const getBackgroundColor = () => {
     switch (variant) {
-      case 'secondary': return Colors.light.surface;
+      case 'secondary': return colors.surface;
       case 'outline': return 'transparent';
       case 'ghost': return 'transparent';
       case 'primary':
-      default: return Colors.light.primary;
+      default: return colors.primary;
     }
   };
 
   const getTextColor = () => {
     switch (variant) {
-      case 'secondary': return Colors.light.text;
-      case 'outline': return Colors.light.primary;
-      case 'ghost': return Colors.light.tabIconDefault;
+      case 'secondary': return colors.text;
+      case 'outline': return colors.primary;
+      case 'ghost': return colors.tabIconDefault;
       case 'primary':
       default: return '#FFFFFF';
     }
@@ -42,7 +45,7 @@ export function Button({
 
   const getBorder = () => {
     if (variant === 'outline') {
-      return { borderWidth: 1, borderColor: Colors.light.primary };
+      return { borderWidth: 1, borderColor: colors.primary };
     }
     return {};
   };
@@ -82,7 +85,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: Typography.sizes.base,
-    // Note: Cast to 'any' due to React Native typings for specific font weights
     fontWeight: Typography.weights.semibold as any, 
   },
 });

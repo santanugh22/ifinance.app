@@ -1,47 +1,91 @@
-// app/(tabs)/transactions.tsx
-
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, TextInput, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TextInput, SafeAreaView, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '@/store/useFinanceStore';
 import { TransactionList } from '@/components/lists/TransactionList';
+import { FilterBar } from '@/components/ui/FilterBar';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/constants/Categories';
+
+import { useThemeColor } from '@/hooks/useThemeColor';
+
+const TYPE_OPTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'expense', label: 'Expenses' },
+  { id: 'income', label: 'Income' },
+];
 
 export default function TransactionsScreen() {
   const transactions = useFinanceStore((state) => state.transactions);
   const deleteTransaction = useFinanceStore((state) => state.deleteTransaction);
+  const colors = useThemeColor();
+  
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Memoize filtered transactions so we don't recompute on every render unnecessarily
+  const categories = useMemo(() => {
+    const base = [{ id: 'all', label: 'All Categories' }];
+    if (selectedType === 'expense') {
+      return [...base, ...EXPENSE_CATEGORIES.map(c => ({ id: c.id, label: c.name }))];
+    }
+    if (selectedType === 'income') {
+      return [...base, ...INCOME_CATEGORIES.map(c => ({ id: c.id, label: c.name }))];
+    }
+    return base;
+  }, [selectedType]);
+
+  // Combined filtering logic
   const filteredTransactions = useMemo(() => {
-    if (!searchQuery.trim()) return transactions;
-    
-    const lowerQuery = searchQuery.toLowerCase();
-    return transactions.filter(tx => 
-      (tx.notes && tx.notes.toLowerCase().includes(lowerQuery)) ||
-      // We could also join with categories here if we wanted to search by category name
-      tx.amount.toString().includes(lowerQuery)
-    );
-  }, [transactions, searchQuery]);
+    return transactions.filter(tx => {
+      const matchesSearch = !searchQuery.trim() || 
+        (tx.notes && tx.notes.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        tx.amount.toString().includes(searchQuery);
+      
+      const matchesType = selectedType === 'all' || tx.type === selectedType;
+      
+      const matchesCategory = selectedCategory === 'all' || tx.categoryId === selectedCategory;
+
+      return matchesSearch && matchesType && matchesCategory;
+    });
+  }, [transactions, searchQuery, selectedType, selectedCategory]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
         
-        {/* Search Header */}
-        <View style={styles.header}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color={Colors.light.tabIconDefault} style={styles.searchIcon} />
+        {/* Search & Filter Header */}
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search" size={20} color={colors.tabIconDefault} style={styles.searchIcon} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Search notes or amounts..."
-              placeholderTextColor={Colors.light.tabIconDefault}
+              placeholderTextColor={colors.tabIconDefault}
               value={searchQuery}
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
             />
           </View>
+        </View>
+
+        <View style={[styles.filterSection, { borderBottomColor: colors.border }]}>
+          <FilterBar 
+            options={TYPE_OPTIONS} 
+            selectedId={selectedType} 
+            onSelect={(id) => {
+              setSelectedType(id);
+              setSelectedCategory('all'); // Reset category when type changes
+            }} 
+          />
+          {categories.length > 1 && (
+            <FilterBar 
+              options={categories} 
+              selectedId={selectedCategory} 
+              onSelect={setSelectedCategory} 
+            />
+          )}
         </View>
 
         {/* Ledger List */}
@@ -60,7 +104,6 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   container: {
     flex: 1,
@@ -68,17 +111,14 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
+    borderWidth: 1,
   },
   searchIcon: {
     marginRight: 8,
@@ -86,8 +126,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: Typography.sizes.base,
-    color: Colors.light.text,
     height: '100%',
+  },
+  filterSection: {
+    paddingBottom: 8,
+    borderBottomWidth: 1,
   },
   listContainer: {
     flex: 1,

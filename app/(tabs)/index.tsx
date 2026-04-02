@@ -1,23 +1,27 @@
-// app/(tabs)/index.tsx
-
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFinanceStore } from '@/store/useFinanceStore';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { SummaryCard } from '@/components/ui/SummaryCard';
+import { WeeklySpendingLineChart } from '@/components/charts/WeeklySpendingLineChart';
+import { SavingsGoalWidget } from '@/components/features/SavingsGoalWidget';
 import { AISpendingInsight } from '@/components/ai/AISpendingInsight';
 import { TransactionItem } from '@/components/lists/TransactionItem';
-import { ExportService } from '@/utils/ExportService';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const { transactions, deleteTransaction } = useFinanceStore();
-  const { currentCurrency } = useCurrencyStore();
+  const colors = useThemeColor();
+  const { transactions, goals, deleteTransaction } = useFinanceStore();
+  const { selectedCurrency } = useSettingsStore();
 
   // Financial summary calculation
   const { balance, income, expense } = useMemo(() => {
@@ -36,18 +40,11 @@ export default function HomeScreen() {
     );
   }, [transactions]);
 
-  const handleExport = async () => {
-    try {
-      await ExportService.exportTransactionsToCSV(transactions, currentCurrency.code);
-    } catch (error: any) {
-      Alert.alert('Export Error', error.message);
-    }
-  };
-
-  const recentTransactions = useMemo(() => transactions.slice(0, 10), [transactions]);
+  const activeGoal = useMemo(() => goals.find(g => !g.isCompleted) || goals[0], [goals]);
+  const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView 
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
@@ -55,33 +52,79 @@ export default function HomeScreen() {
       >
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.displayName?.split(' ')[0] || 'Member'} 👋</Text>
-            <Text style={styles.subtitle}>Welcome back to your wallet</Text>
+            <Text style={[styles.greeting, { color: colors.text }]}>Hello, {user?.displayName?.split(' ')[0] || 'Member'} 👋</Text>
+            <Text style={[styles.subtitle, { color: colors.tabIconDefault }]}>Your finances are looking good</Text>
           </View>
-          <TouchableOpacity style={styles.iconButton} onPress={handleExport}>
-            <Ionicons name="share-outline" size={22} color={Colors.light.text} />
+          <TouchableOpacity 
+            style={styles.profileButton} 
+            onPress={() => router.push('/(tabs)/profile' as any)}
+          >
+            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <Text style={[styles.avatarText, { color: colors.primary }]}>{user?.email?.charAt(0).toUpperCase() || 'U'}</Text>
+            </View>
           </TouchableOpacity>
         </Animated.View>
 
         <SummaryCard balance={balance} income={income} expense={expense} />
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => router.push('/modal/add-transaction' as any)}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: `${colors.primary}15` }]}>
+              <Ionicons name="add" size={24} color={colors.primary} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.text }]}>Add Tx</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => router.push('/modal/add-goal' as any)}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: `${colors.success}15` }]}>
+              <Ionicons name="flag-outline" size={20} color={colors.success} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.text }]}>New Goal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => router.push('/(tabs)/insights' as any)}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: `${colors.warning}15` }]}>
+              <Ionicons name="stats-chart-outline" size={20} color={colors.warning} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.text }]}>Insights</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Animated.View entering={FadeInDown.delay(200).duration(600)}>
+          <WeeklySpendingLineChart transactions={transactions} />
+        </Animated.View>
+
+        {activeGoal && (
+          <Animated.View entering={FadeInDown.delay(300).duration(600)}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings Progress</Text>
+            </View>
+            <SavingsGoalWidget goal={activeGoal} />
+          </Animated.View>
+        )}
         
         <AISpendingInsight transactions={transactions} />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent activity</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/transactions' as any)}>
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>View all</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.listContainer}>
+        <View style={[styles.listContainer, { backgroundColor: colors.surface }]}>
           {recentTransactions.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconWrapper}>
-                <Ionicons name="receipt-outline" size={32} color={Colors.light.textSecondary} />
-              </View>
-              <Text style={styles.emptyText}>No transactions yet.</Text>
-              <Text style={styles.emptySubtext}>Tap the + button to add one.</Text>
+              <Ionicons name="receipt-outline" size={32} color={colors.tabIconDefault} />
+              <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>No transactions yet</Text>
             </View>
           ) : (
             recentTransactions.map((tx) => (
@@ -101,7 +144,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   container: {
     flex: 1,
@@ -109,6 +151,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
     paddingTop: 10,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -118,69 +161,77 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: Typography.sizes.xl,
-    fontWeight: 'bold',
-    color: Colors.light.text,
+    fontWeight: '800',
   },
   subtitle: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
-  iconButton: {
+  profileButton: {
     width: 44,
     height: 44,
-    borderRadius: 14,
-    backgroundColor: Colors.light.surface,
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderWidth: 1,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 24,
+  },
+  actionButton: {
+    alignItems: 'center',
+    width: '30%',
+  },
+  actionIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: '700',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 10,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontSize: Typography.sizes.base,
+    fontWeight: '800',
   },
   seeAllText: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   listContainer: {
-    gap: 0, // TransactionItem has its own margin
+    borderRadius: 24,
+    padding: 8,
   },
   emptyContainer: {
-    paddingVertical: 40,
+    padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: Colors.light.surfaceSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+    gap: 12,
   },
   emptyText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  emptySubtext: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.textSecondary,
+    fontWeight: '500',
   },
 });

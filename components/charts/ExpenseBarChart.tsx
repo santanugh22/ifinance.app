@@ -7,11 +7,17 @@ import { Transaction } from '@/types';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
+
 interface ExpenseBarChartProps {
   transactions: Transaction[];
 }
 
 export function ExpenseBarChart({ transactions }: ExpenseBarChartProps) {
+  const { selectedCurrency } = useSettingsStore();
+  const colors = useThemeColor();
+
   const barData = useMemo(() => {
     // Generate the last 7 days labels and initialize totals to 0
     const last7Days = Array.from({ length: 7 })
@@ -43,20 +49,20 @@ export function ExpenseBarChart({ transactions }: ExpenseBarChartProps) {
     return last7Days.map((day) => ({
       value: day.total,
       label: day.label,
-      frontColor: day.total > 0 ? Colors.light.primary : Colors.light.border,
+      frontColor: day.total > 0 ? colors.primary : colors.border,
       topLabelComponent: () => (
-        <Text style={styles.barLabel}>
-          {day.total > 0 ? `$${Math.round(day.total)}` : ''}
+        <Text style={[styles.barLabel, { color: colors.tabIconDefault }]}>
+          {day.total > 0 ? `${selectedCurrency.symbol}${Math.round(day.total)}` : ''}
         </Text>
       ),
     }));
-  }, [transactions]);
+  }, [transactions, colors, selectedCurrency]);
 
   const maxValue = Math.max(...barData.map(d => d.value), 100);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Last 7 Days</Text>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Last 7 Days</Text>
       <View style={styles.chartWrapper}>
         <BarChart
           data={barData}
@@ -66,12 +72,14 @@ export function ExpenseBarChart({ transactions }: ExpenseBarChartProps) {
           spacing={20}
           roundedTop
           roundedBottom
-          hideRules
+          hideRules={false}
+          rulesColor={colors.border}
           xAxisThickness={0}
           yAxisThickness={0}
-          yAxisTextStyle={{ color: Colors.light.tabIconDefault, fontSize: 10 }}
+          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
           noOfSections={4}
-          maxValue={maxValue * 1.2} // Add 20% headroom for the top label
+          maxValue={maxValue * 1.2}
           initialSpacing={10}
         />
       </View>
@@ -81,7 +89,6 @@ export function ExpenseBarChart({ transactions }: ExpenseBarChartProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
@@ -94,7 +101,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.sizes.lg,
     fontWeight: 'bold',
-    color: Colors.light.text,
     marginBottom: 24,
   },
   chartWrapper: {
@@ -102,7 +108,6 @@ const styles = StyleSheet.create({
     marginLeft: -10, // Slight adjustment for Y axis alignment
   },
   barLabel: {
-    color: Colors.light.tabIconDefault,
     fontSize: 10,
     marginBottom: 4,
     fontWeight: '600',

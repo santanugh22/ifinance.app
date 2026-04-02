@@ -10,7 +10,8 @@ import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { formatTime } from '@/utils/date';
 import Animated, { FadeInUp, Layout, FadeOutDown } from 'react-native-reanimated';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -20,7 +21,8 @@ interface TransactionItemProps {
 export function TransactionItem({ transaction, onDelete }: TransactionItemProps) {
   const category = getCategoryById(transaction.categoryId);
   const isIncome = transaction.type === 'income';
-  const { formatAmount } = useCurrencyStore();
+  const { formatAmount } = useSettingsStore();
+  const colors = useThemeColor();
 
   const renderRightActions = (
     progress: RNAnimated.AnimatedInterpolation<number>,
@@ -34,7 +36,7 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
 
     return (
       <TouchableOpacity 
-        style={styles.deleteAction} 
+        style={[styles.deleteAction, { backgroundColor: colors.danger }]} 
         onPress={() => onDelete(transaction.id)}
         activeOpacity={0.8}
       >
@@ -50,21 +52,21 @@ export function TransactionItem({ transaction, onDelete }: TransactionItemProps)
       entering={FadeInUp.duration(400)} 
       exiting={FadeOutDown} 
       layout={Layout.springify()}
-      style={styles.wrapper}
+      style={[styles.wrapper, { backgroundColor: colors.surface }]}
     >
       <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
-        <View style={styles.container}>
-          <View style={[styles.iconContainer, { backgroundColor: `${category?.color || Colors.light.tabIconDefault}15` }]}>
-            <Ionicons name={(category?.icon as any) || 'help'} size={20} color={category?.color || Colors.light.tabIconDefault} />
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+          <View style={[styles.iconContainer, { backgroundColor: `${category?.color || colors.tabIconDefault}15` }]}>
+            <Ionicons name={(category?.icon as any) || 'help'} size={20} color={category?.color || colors.tabIconDefault} />
           </View>
           
           <View style={styles.detailsContainer}>
-            <Text style={styles.categoryName}>{category?.name || 'Unknown'}</Text>
-            <Text style={styles.time}>{formatTime(transaction.date)}{transaction.notes ? ` • ${transaction.notes}` : ''}</Text>
+            <Text style={[styles.categoryName, { color: colors.text }]}>{category?.name || 'Unknown'}</Text>
+            <Text style={[styles.time, { color: colors.textSecondary }]}>{formatTime(transaction.date)}{transaction.notes ? ` • ${transaction.notes}` : ''}</Text>
           </View>
 
           <View style={styles.amountContainer}>
-            <Text style={[styles.amount, { color: isIncome ? Colors.light.success : Colors.light.text }]}>
+            <Text style={[styles.amount, { color: isIncome ? colors.success : colors.text }]}>
               {isIncome ? '+' : '-'}{formatAmount(transaction.amount)}
             </Text>
           </View>
@@ -79,7 +81,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: Colors.light.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -91,7 +92,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: Colors.light.surface,
   },
   iconContainer: {
     width: 44,
@@ -108,12 +108,10 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: Typography.sizes.base,
     fontWeight: 'bold',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   time: {
     fontSize: Typography.sizes.xs,
-    color: Colors.light.textSecondary,
   },
   amountContainer: {
     alignItems: 'flex-end',
@@ -124,7 +122,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   deleteAction: {
-    backgroundColor: Colors.light.danger,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,

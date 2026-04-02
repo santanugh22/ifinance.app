@@ -7,7 +7,8 @@ import { Typography } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface SummaryCardProps {
   balance: number;
@@ -15,18 +16,17 @@ interface SummaryCardProps {
   expense: number;
 }
 
-const { width } = Dimensions.get('window');
-
 export function SummaryCard({ balance, income, expense }: SummaryCardProps) {
-  const { formatAmount } = useCurrencyStore();
+  const { formatAmount } = useSettingsStore();
+  const colors = useThemeColor();
 
   return (
     <Animated.View 
       entering={FadeInUp.duration(600).delay(100)}
-      style={styles.container}
+      style={[styles.container, { shadowColor: colors.primary }]}
     >
       <LinearGradient
-        colors={Colors.light.primaryGradient}
+        colors={colors.primaryGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}
@@ -67,7 +67,6 @@ export function SummaryCard({ balance, income, expense }: SummaryCardProps) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    shadowColor: Colors.light.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 15,

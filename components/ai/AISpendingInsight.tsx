@@ -1,20 +1,19 @@
-// components/ai/AISpendingInsight.tsx
-
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { Transaction } from '@/types';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface AISpendingInsightProps {
   transactions: Transaction[];
 }
 
 export function AISpendingInsight({ transactions }: AISpendingInsightProps) {
-  const { formatAmount } = useCurrencyStore();
+  const { formatAmount } = useSettingsStore();
+  const colors = useThemeColor();
 
   const insight = useMemo(() => {
     if (transactions.length < 5) {
@@ -22,7 +21,7 @@ export function AISpendingInsight({ transactions }: AISpendingInsightProps) {
         title: 'Building Insights...',
         message: 'Add more transactions to get AI-powered spending tips.',
         icon: 'analytics',
-        color: Colors.light.info,
+        color: colors.primary, // Using theme color instead of hardcoded
       };
     }
 
@@ -36,7 +35,7 @@ export function AISpendingInsight({ transactions }: AISpendingInsightProps) {
         title: 'High Spending Alert',
         message: `You've spent ${formatAmount(recentTotal)} this week. Consider cutting back on non-essentials.`,
         icon: 'warning',
-        color: Colors.light.danger,
+        color: colors.danger,
       };
     }
 
@@ -44,32 +43,27 @@ export function AISpendingInsight({ transactions }: AISpendingInsightProps) {
       title: 'Healthy Spending',
       message: "Your spending is 15% lower than last week. Great job on your savings streak!",
       icon: 'checkmark-circle',
-      color: Colors.light.success,
+      color: colors.success,
     };
-  }, [transactions, formatAmount]);
+  }, [transactions, formatAmount, colors]);
 
   return (
     <Animated.View 
       entering={FadeInRight.duration(800).delay(300)}
       style={styles.container}
     >
-      <View style={[styles.card, { borderColor: `${insight.color}40` }]}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: `${insight.color}40` }]}>
         <View style={styles.header}>
           <View style={[styles.iconWrapper, { backgroundColor: `${insight.color}15` }]}>
             <Ionicons name={insight.icon as any} size={20} color={insight.color} />
           </View>
           <Text style={[styles.title, { color: insight.color }]}>{insight.title}</Text>
-          <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>AI Insights</Text>
+          <View style={[styles.aiBadge, { backgroundColor: `${colors.primary}10` }]}>
+            <Text style={[styles.aiBadgeText, { color: colors.primary }]}>AI Insights</Text>
           </View>
         </View>
         
-        <Text style={styles.message}>{insight.message}</Text>
-        
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionText}>View Analysis</Text>
-          <Ionicons name="arrow-forward" size={14} color={Colors.light.primary} />
-        </TouchableOpacity>
+        <Text style={[styles.message, { color: colors.textSecondary }]}>{insight.message}</Text>
       </View>
     </Animated.View>
   );
@@ -81,7 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   card: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
@@ -110,7 +103,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiBadge: {
-    backgroundColor: `${Colors.light.primary}10`,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -118,23 +110,10 @@ const styles = StyleSheet.create({
   aiBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: Colors.light.primary,
     textTransform: 'uppercase',
   },
   message: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.textSecondary,
     lineHeight: 20,
-    marginBottom: 16,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  actionText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: '600',
-    color: Colors.light.primary,
   },
 });

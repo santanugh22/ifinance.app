@@ -7,6 +7,7 @@ import { groupTransactionsByDate } from '@/utils/date';
 import { TransactionItem } from './TransactionItem';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -16,11 +17,12 @@ interface TransactionListProps {
 
 export function TransactionList({ transactions, onDelete, isLoading = false }: TransactionListProps) {
   const sections = useMemo(() => groupTransactionsByDate(transactions), [transactions]);
+  const colors = useThemeColor();
 
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -28,8 +30,8 @@ export function TransactionList({ transactions, onDelete, isLoading = false }: T
   if (transactions.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyTitle}>No transactions yet</Text>
-        <Text style={styles.emptySubtitle}>Tap the + or - buttons on Home to add one.</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>No transactions yet</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Tap the + or - buttons on Home to add one.</Text>
       </View>
     );
   }
@@ -40,8 +42,8 @@ export function TransactionList({ transactions, onDelete, isLoading = false }: T
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <TransactionItem transaction={item} onDelete={onDelete} />}
       renderSectionHeader={({ section: { title } }) => (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+          <Text style={[styles.sectionTitle, { color: colors.tabIconDefault }]}>{title}</Text>
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -61,12 +63,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: 'bold',
-    color: Colors.light.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.tabIconDefault,
     textAlign: 'center',
   },
   listContent: {
@@ -75,14 +75,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: 24,
     paddingVertical: 8,
-    backgroundColor: Colors.light.background,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: Typography.sizes.xs,
     fontWeight: '600',
-    color: Colors.light.tabIconDefault,
     textTransform: 'uppercase',
     letterSpacing: 1,
-  }
+  },
 });

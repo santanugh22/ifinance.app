@@ -5,9 +5,10 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-nativ
 import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Goal } from '@/types';
-import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { useFinanceStore } from '@/store/useFinanceStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface GoalCardProps {
   goal: Goal;
@@ -15,6 +16,9 @@ interface GoalCardProps {
 
 export function GoalCard({ goal }: GoalCardProps) {
   const updateGoalAmount = useFinanceStore((state) => state.updateGoalAmount);
+  const { formatAmount } = useSettingsStore();
+  const colors = useThemeColor();
+
   const [isAdding, setIsAdding] = useState(false);
   const [addAmount, setAddAmount] = useState('');
   
@@ -39,52 +43,53 @@ export function GoalCard({ goal }: GoalCardProps) {
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{goal.title}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{goal.title}</Text>
         {goal.isCompleted && (
-          <Ionicons name="checkmark-circle" size={24} color={Colors.light.success} />
+          <Ionicons name="checkmark-circle" size={24} color={colors.success} />
         )}
       </View>
 
       <View style={styles.amounts}>
-        <Text style={styles.current}>${goal.currentAmount.toLocaleString()}</Text>
-        <Text style={styles.target}>/ ${goal.targetAmount.toLocaleString()}</Text>
+        <Text style={[styles.current, { color: colors.text }]}>{formatAmount(goal.currentAmount)}</Text>
+        <Text style={[styles.target, { color: colors.tabIconDefault }]}>/ {formatAmount(goal.targetAmount)}</Text>
       </View>
 
-      <View style={styles.progressTrack}>
+      <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
         <Animated.View style={[
           styles.progressFill, 
           animatedProgressStyle,
-          goal.isCompleted && { backgroundColor: Colors.light.success }
+          { backgroundColor: colors.primary },
+          goal.isCompleted && { backgroundColor: colors.success }
         ]} />
       </View>
-      <Text style={styles.percentText}>{progressPercent.toFixed(1)}% Completed</Text>
+      <Text style={[styles.percentText, { color: colors.tabIconDefault }]}>{progressPercent.toFixed(1)}% Completed</Text>
 
       {!goal.isCompleted && (
-        <View style={styles.actionContainer}>
+        <View style={[styles.actionContainer, { borderTopColor: colors.border }]}>
           {isAdding ? (
             <View style={styles.inputRow}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
                 placeholder="Amount to add..."
-                placeholderTextColor={Colors.light.tabIconDefault}
+                placeholderTextColor={colors.tabIconDefault}
                 keyboardType="decimal-pad"
                 value={addAmount}
                 onChangeText={setAddAmount}
                 autoFocus
               />
-              <TouchableOpacity style={styles.saveBtn} onPress={handleAddFunds}>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleAddFunds}>
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsAdding(false)}>
-                <Ionicons name="close" size={20} color={Colors.light.text} />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity style={styles.addBtn} onPress={() => setIsAdding(true)}>
-              <Ionicons name="add-circle-outline" size={20} color={Colors.light.primary} />
-              <Text style={styles.addBtnText}>Add Funds</Text>
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+              <Text style={[styles.addBtnText, { color: colors.primary }]}>Add Funds</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -95,7 +100,6 @@ export function GoalCard({ goal }: GoalCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
@@ -114,7 +118,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.sizes.base,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   amounts: {
     flexDirection: 'row',
@@ -124,34 +127,28 @@ const styles = StyleSheet.create({
   current: {
     fontSize: Typography.sizes['2xl'],
     fontWeight: 'bold',
-    color: Colors.light.text,
   },
   target: {
     fontSize: Typography.sizes.sm,
-    color: Colors.light.tabIconDefault,
     marginLeft: 4,
   },
   progressTrack: {
     height: 8,
-    backgroundColor: Colors.light.border,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.light.primary,
     borderRadius: 4,
   },
   percentText: {
     fontSize: Typography.sizes.xs,
-    color: Colors.light.tabIconDefault,
     textAlign: 'right',
   },
   actionContainer: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
     paddingTop: 16,
   },
   addBtn: {
@@ -161,7 +158,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addBtnText: {
-    color: Colors.light.primary,
     fontWeight: '600',
   },
   inputRow: {
@@ -172,14 +168,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 40,
-    backgroundColor: Colors.light.background,
     borderRadius: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   saveBtn: {
-    backgroundColor: Colors.light.primary,
     paddingHorizontal: 16,
     height: 40,
     justifyContent: 'center',

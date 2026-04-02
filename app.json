@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "finance",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
@@ -15,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ifinanceapp.app"
+      "bundleIdentifier": "com.ifinanceapp.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.ifinanceapp.app",
@@ -23,23 +23,22 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
-      ]
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT"]
     },
     "plugins": [
       "expo-router",
       "expo-local-authentication",
       "expo-font",
       "expo-file-system",
-      ["expo-build-properties",{
-         "ios": {
+      [
+        "expo-build-properties",
+        {
+          "ios": {
             "useFrameworks": "static",
             "buildReactNativeFromSource": true
           }
-      }]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
