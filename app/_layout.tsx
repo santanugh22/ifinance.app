@@ -1,59 +1,100 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+// app/_layout.tsx
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import React, { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useFinanceStore } from '@/store/useFinanceStore';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { Colors } from '@/constants/Colors';
+import { useNotifications } from '@/hooks/useNotifications';
+import { BiometricOverlay } from '@/components/utils/BiometricOverlay';
+import { ErrorBoundary } from '@/components/utils/ErrorBoundary';
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
-  });
+  const { setUser, isLoading } = useAuthStore();
+  const fetchFinanceData = useFinanceStore((state) => state.fetchFinanceData);
+  const segments = useSegments();
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  
+  // Initialize notification permissions and schedules
+  useNotifications();
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  // Listen to Firebase Auth state changes
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+    const subscriber = auth().onAuthStateChanged((firebaseUser: FirebaseAuthTypes.User | null) => {
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          biometricsEnabled: useAuthStore.getState().isBiometricsEnabled,
+        });
+        
+        // Start syncing finance data
+        return fetchFinanceData(firebaseUser.uid);
+      } else {
+        setUser(null);
+      }
+    });
+    return subscriber; // Unsubscribe on unmount
+  }, [setUser, fetchFinanceData]);
 
+  // Route Guarding Logic
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)');
     }
-  }, [loaded]);
+  }, [user, isLoading, segments, router]);
 
-  if (!loaded) {
-    return null;
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.light.primary} />
+      </View>
+    );
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.container}>
+        <StatusBar style="auto" />
+        <BiometricOverlay />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen 
+            name="modal/add-transaction" 
+            options={{ presentation: 'modal' }} 
+          />
+          <Stack.Screen 
+            name="modal/add-goal" 
+            options={{ presentation: 'modal' }} 
+          />
+          <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+        </Stack>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.light.background,
+  },
+});
