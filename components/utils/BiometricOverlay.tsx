@@ -36,9 +36,11 @@ export function BiometricOverlay() {
   const hasInitializedLockState = useRef(false);
   const isAuthenticatingRef = useRef(false);
   const hasAttemptedAutoUnlockRef = useRef(false);
+  const suppressForegroundRelockUntilRef = useRef(0);
 
   useEffect(() => {
     if (!shouldRequireLock) {
+      suppressForegroundRelockUntilRef.current = 0;
       setIsLocked(false);
       return;
     }
@@ -58,11 +60,14 @@ export function BiometricOverlay() {
     const subscription = AppState.addEventListener("change", (nextState) => {
       const wasReturningToForeground =
         /inactive|background/.test(appState.current) && nextState === "active";
+      const isInForegroundRelockCooldown =
+        Date.now() < suppressForegroundRelockUntilRef.current;
 
       if (
         wasReturningToForeground &&
         shouldRequireLock &&
-        !isAuthenticatingRef.current
+        !isAuthenticatingRef.current &&
+        !isInForegroundRelockCooldown
       ) {
         setIsLocked(true);
       }
@@ -111,6 +116,9 @@ export function BiometricOverlay() {
     try {
       const success = await authenticate();
       if (success) {
+        // Face ID can briefly background/inactivate the app; suppress that
+        // immediate foreground transition from re-locking right after unlock.
+        suppressForegroundRelockUntilRef.current = Date.now() + 1200;
         setIsLocked(false);
       }
     } finally {
