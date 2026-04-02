@@ -1,8 +1,8 @@
 // services/MarketService.ts
 
 import { InvestmentAsset, MarketHighlight } from "@/types";
-
-const API_KEY = "XILO1G1HFUMUSBND";
+import {API_KEY_L} from "../env"
+const API_KEY = API_KEY_L;
 const BASE_URL = "https://www.alphavantage.co/query";
 const REQUEST_INTERVAL_MS = 1200;
 const QUOTE_CACHE_TTL_MS = 10 * 60 * 1000;

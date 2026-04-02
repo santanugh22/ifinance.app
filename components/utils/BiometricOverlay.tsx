@@ -1,7 +1,15 @@
 // components/utils/BiometricOverlay.tsx
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AppState,
+  AppStateStatus,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { Typography } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +18,45 @@ import { BlurView } from 'expo-blur';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 export function BiometricOverlay() {
-  const { isBiometricsEnabled, authenticate } = useBiometrics();
+  const {
+    isBiometricsEnabled,
+    authenticate,
+    isCompatibilityChecked,
+    isCompatible,
+  } = useBiometrics();
   const [isLocked, setIsLocked] = useState(isBiometricsEnabled);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
-    if (isBiometricsEnabled) {
-      handleAuth();
+    if (!isBiometricsEnabled) {
+      setIsLocked(false);
+      return;
     }
+
+    setIsLocked(true);
   }, [isBiometricsEnabled]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const wasInBackground =
+        appState.current.match(/inactive|background/) && nextState === 'active';
+
+      if (wasInBackground && isBiometricsEnabled) {
+        setIsLocked(true);
+      }
+
+      appState.current = nextState;
+    });
+
+    return () => subscription.remove();
+  }, [isBiometricsEnabled]);
+
+  useEffect(() => {
+    if (!isLocked || !isBiometricsEnabled) return;
+    if (!isCompatibilityChecked || !isCompatible) return;
+
+    void handleAuth();
+  }, [isLocked, isBiometricsEnabled, isCompatibilityChecked, isCompatible]);
 
   const handleAuth = async () => {
     const success = await authenticate();
